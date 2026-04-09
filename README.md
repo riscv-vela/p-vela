@@ -1,2 +1,2 @@
 # p-vela
-# RISC-V QEMU Power Simulation Model
+Power and performance modeling code in QEMU virtualization environments
