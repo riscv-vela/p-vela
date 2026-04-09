@@ -1,4 +1,3 @@
-# p-vela
 # RISC-V QEMU Power Simulation Model v1.0
 
 This system estimates real-time power consumption by combining the Host PC's CPU frequency with the Guest (QEMU) resource utilization.
