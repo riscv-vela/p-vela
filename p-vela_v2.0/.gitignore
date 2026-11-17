@@ -1,0 +1,62 @@
+# Local editor and Python environments/caches
+.vscode/
+.idea/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+
+# Generated experiment artifacts
+**/logs/
+**/runs/
+**/results/
+**/outputs/
+/gemmini_experiments/applications/*/sst2_pipeline/guest/generated/
+# Preserve the previous pre-applications layout exclusion.
+/gemmini_experiments/distilbert/sst2_pipeline/guest/generated/
+
+# Local build/model/debug artifacts
+build/
+dist/
+*.egg-info/
+*.o
+*.a
+*.so
+*.riscv
+*.npz
+*.native
+*.log
+*.orig
+*.rej
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# External QEMU checkout/link and local guest images
+/q-vela
+ubuntu-*-preinstalled-server-riscv64.img
+ubuntu-*-preinstalled-server-riscv64.img.xz
+*.qcow2
+
+# Local credentials (power_model_defaults.env remains tracked)
+.env
+.env.*
+id_rsa
+id_ed25519
+*.pem
+*.key
+
+# Local tool installs
+.tools/
+OpenROAD-flow-scripts/
+openroad_sh/downloads/
+openroad_sh/reports/
