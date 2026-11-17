@@ -33,7 +33,7 @@ p-vela/
 │   ├── power_sim.py / power_sim_mem.py
 │   └── log_powersim.sh / run_7z_top_powersim*.sh
 └── p-vela_v2.0/                    # v2.0: CPU + AI execution engine power/performance model
-    ├── README.md                   # Overview and quick start (Korean)
+    ├── README.md                   # Overview and quick start
     ├── qemu_boot/                  # QEMU launch and thread pinning scripts
     └── gemmini_experiments/
         ├── applications/           # DistilBERT, DistilRoBERTa, DistilGPT2, PolyBench GEMM
