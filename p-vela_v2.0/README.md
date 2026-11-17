@@ -1,67 +1,69 @@
-# QEMU 환경에서의 실시간 성능 및 전력 모델링
+# Real-Time Performance and Power Modeling in a QEMU Environment
 
-## 프로젝트 개요
+## Project Overview
 
-본 프로젝트는 “SDR의 개방형 생태계 구축을 위한 RISC-V 기반 시스템 소프트웨어 기술개발”
-과제의 시스템 SW를 정량적으로 평가하기 위해, QEMU 에뮬레이션 환경에서 RISC-V CPU와
-AI 실행 엔진(Gemmini)을 포함한 시스템의 성능·전력 계측 모델을 개발한다. 기존 CPU 전력
-모델을 AI 실행 엔진까지 확장하고, 애플리케이션 실행 시간 추정과 실시간 소모 전력
-모니터링을 지원하여 시스템 SW의 성능 및 전력 개선 효과를 평가하는 것을 목표로 한다.
+To quantitatively evaluate the system SW of the project "Development of RISC-V-based System
+Software Technology for Building an Open SDR Ecosystem", this project develops a performance
+and power measurement model for a system that includes a RISC-V CPU and an AI execution engine
+(Gemmini) in a QEMU emulation environment. The goal is to extend the existing CPU power model
+to the AI execution engine and to support application execution-time estimation and real-time
+power consumption monitoring, so that the performance and power improvements of the system SW
+can be evaluated.
 
-## 문서 안내
+## Documentation Guide
 
-| 확인할 내용 | 문서 |
+| Topic | Document |
 |---|---|
-| QEMU 부팅, 공유 폴더, SSH, thread pinning | [QEMU Boot](./qemu_boot/README.md) |
-| Application 구성 및 준비 | [Applications](./gemmini_experiments/applications/README.md) |
-| 전력 모델 설정, 실험 실행 및 결과 확인 | [Power Modeling](./gemmini_experiments/power_modeling/README.md) |
-| 전력 계산식, RTL cycle 모델, 시간 보정 | [Power Simulation](./gemmini_experiments/power_modeling/power_sim/README.md) |
+| QEMU boot, shared folder, SSH, thread pinning | [QEMU Boot](./qemu_boot/README.md) |
+| Application setup and preparation | [Applications](./gemmini_experiments/applications/README.md) |
+| Power model configuration, running experiments, and checking results | [Power Modeling](./gemmini_experiments/power_modeling/README.md) |
+| Power equations, RTL cycle model, time scaling | [Power Simulation](./gemmini_experiments/power_modeling/power_sim/README.md) |
 
-## 지원 Application
+## Supported Applications
 
-| Application | 용도 |
+| Application | Purpose |
 |---|---|
-| [DistilBERT](./gemmini_experiments/applications/distilbert/) | SST-2 텍스트 분류 |
-| [DistilRoBERTa](./gemmini_experiments/applications/distilroberta/) | SST-2 텍스트 분류 |
-| [DistilGPT2](./gemmini_experiments/applications/distilgpt2/) | SST-2 텍스트 분류, WikiText 언어 모델링 |
-| [PolyBench GEMM](./gemmini_experiments/applications/polybench_gemm/) | 행렬 곱셈 benchmark |
+| [DistilBERT](./gemmini_experiments/applications/distilbert/) | SST-2 text classification |
+| [DistilRoBERTa](./gemmini_experiments/applications/distilroberta/) | SST-2 text classification |
+| [DistilGPT2](./gemmini_experiments/applications/distilgpt2/) | SST-2 text classification, WikiText language modeling |
+| [PolyBench GEMM](./gemmini_experiments/applications/polybench_gemm/) | Matrix multiplication benchmark |
 
-현재 workspace의 DistilGPT2 실행 경로는 SST-2 기준이며, WikiText 파이프라인은 포함되어 있지 않다.
+The DistilGPT2 execution path in the current workspace is based on SST-2; the WikiText pipeline is not included.
 
-## 실험 진행 순서
+## Experiment Workflow
 
-0. [Applications](./gemmini_experiments/applications/)에서 실행할 application과 필요한 모델·입력 데이터를 준비한다.
-1. [QEMU Boot](./qemu_boot/)의 안내에 따라 QEMU를 부팅한다.
-2. [QEMU Boot](./qemu_boot/)의 pinning 안내에 따라 QEMU thread를 host CPU에 배치한다.
-3. [Power Modeling](./gemmini_experiments/power_modeling/README.md)의 안내에 따라 실험을 실행하고 결과를 확인한다.
+0. In [Applications](./gemmini_experiments/applications/), prepare the application to run along with the required model and input data.
+1. Boot QEMU following the instructions in [QEMU Boot](./qemu_boot/).
+2. Pin the QEMU threads to host CPUs following the pinning instructions in [QEMU Boot](./qemu_boot/).
+3. Run the experiment and check the results following the instructions in [Power Modeling](./gemmini_experiments/power_modeling/README.md).
 
-상세 준비 과정, 실행 명령과 결과 설명은 각 폴더의 README를 참고한다.
+For detailed preparation steps, run commands, and descriptions of the results, see the README in each folder.
 
-### Quick Start: Single Application 예시
+### Quick Start: Single Application Example
 
-#### 0. 사전 준비
+#### 0. Prerequisites
 
-DistilBERT 모델·입력 데이터와 power 바이너리, QEMU 실행 파일·guest 이미지,
-SSH·공유 폴더 사용 환경을 준비한다. 아래 명령은 모두 **host의 workspace root**에서 실행한다.
+Prepare the DistilBERT model and input data, the power binary, the QEMU executable and guest image,
+and an environment for SSH and the shared folder. Run all commands below from the **workspace root on the host**.
 
-#### 1. QEMU 부팅 — host 터미널 1
+#### 1. Boot QEMU — host terminal 1
 
 ```bash
 bash qemu_boot/run_qemu.sh 1 3
 ```
 
-#### 2. Pinning — guest 부팅 완료 후 host 터미널 2
+#### 2. Pinning — host terminal 2, after the guest has finished booting
 
 ```bash
 bash qemu_boot/pin.sh 8 2
 ```
 
-#### 3. DistilBERT 실행 — host 터미널 2
+#### 3. Run DistilBERT — host terminal 2
 
 ```bash
 bash gemmini_experiments/power_modeling/single_app_power_modeling/experiment_scripts/run_single_app_power.sh \
     distilbert --sample-limit 1
 ```
 
-종료 시 출력되는 `model results:` 경로에서 `raw_power.csv`와 자동 생성된 그래프·summary를
-확인한다. 상세 옵션과 결과 설명은 [Power Modeling](./gemmini_experiments/power_modeling/README.md)을 참고한다.
+When the run finishes, check `raw_power.csv` and the automatically generated graphs and summary
+under the `model results:` path printed at the end. For detailed options and descriptions of the results, see [Power Modeling](./gemmini_experiments/power_modeling/README.md).
