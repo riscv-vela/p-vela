@@ -17,6 +17,10 @@ RISCV_GEMMINI_POWER_TARGET := distilbert_gemmini_power_infer.riscv
 RISCV_GEMMINI_DIRECT_POWER_TARGET := distilbert_gemmini_direct_power_infer.riscv
 RISCV_LAYER_GEMM_ACCURACY_TARGET := distilbert_layer_gemm_accuracy.riscv
 RISCV_CPU_POWER_TARGET := distilbert_cpu_power_infer.riscv
+RISCV_GEMMINI_PM_POWER_TARGET := distilbert_gemmini_pm_power_infer.riscv
+# power_mgr.h (power management SW, q-vela v2.0) sits next to gemmini.h in the
+# q-vela test include directory; override if it lives elsewhere.
+PM_INCLUDE ?= $(GEMMINI_INCLUDE)
 
 all: $(RISCV_TARGET) $(RISCV_GEMMINI_TARGET) $(RISCV_GEMMINI_POWER_TARGET) $(RISCV_CPU_POWER_TARGET)
 
@@ -31,6 +35,8 @@ gemmini-v2: gemmini
 power: $(RISCV_GEMMINI_POWER_TARGET) $(RISCV_CPU_POWER_TARGET)
 
 gemmini-direct-power: $(RISCV_GEMMINI_DIRECT_POWER_TARGET)
+
+pm-power: $(RISCV_GEMMINI_PM_POWER_TARGET)
 
 layer-gemm-accuracy: $(RISCV_LAYER_GEMM_ACCURACY_TARGET)
 
@@ -48,6 +54,9 @@ $(RISCV_GEMMINI_DIRECT_TARGET): distilbert_gemmini_direct_infer.c distilbert_gem
 
 $(RISCV_GEMMINI_POWER_TARGET): distilbert_gemmini_power_infer.c distilbert_gemmini_infer.c
 	$(RISCV_CC) $(RISCV_CFLAGS) $(GEMMINI_CHUNK_CFLAGS) -Wno-unused-function $(GEMMINI_CFLAGS) -o $@ $< $(LDFLAGS)
+
+$(RISCV_GEMMINI_PM_POWER_TARGET): distilbert_gemmini_pm_power_infer.c distilbert_gemmini_infer.c $(PM_INCLUDE)/power_mgr.h
+	$(RISCV_CC) $(RISCV_CFLAGS) $(GEMMINI_CHUNK_CFLAGS) -Wno-unused-function -isystem $(PM_INCLUDE) -o $@ $< $(LDFLAGS)
 
 $(RISCV_GEMMINI_DIRECT_POWER_TARGET): distilbert_gemmini_direct_power_infer.c distilbert_gemmini_infer.c
 	$(RISCV_CC) $(RISCV_CFLAGS) $(GEMMINI_CHUNK_CFLAGS) -Wno-unused-function $(GEMMINI_CFLAGS) -o $@ $< $(LDFLAGS)

@@ -38,6 +38,16 @@
 
 #include "gemmini.h"
 
+/* NPU task boundaries for an external power manager (q-vela power_mgr.h,
+ * TC.10.001). A task runs from the first command of a chunk to the fence that
+ * completes it. No-ops unless a build variant defines them. */
+#ifndef NPU_TASK_BEGIN
+#define NPU_TASK_BEGIN() ((void)0)
+#endif
+#ifndef NPU_TASK_END
+#define NPU_TASK_END() ((void)0)
+#endif
+
 #ifndef DISTILBERT_POWER_ONLY
 #define DISTILBERT_POWER_ONLY 0
 #endif
@@ -1462,6 +1472,7 @@ static void gemmini_matmul_acc_chunk(
         pthread_mutex_lock(&g_gemmini_mutex);
     }
 
+    NPU_TASK_BEGIN();
     phase_start_ns = now_ns();
     gemmini_flush(0);
     gemmini_fence();
@@ -1500,6 +1511,7 @@ static void gemmini_matmul_acc_chunk(
     gemmini_fence();
     cpu_memory_fence();
     fence_flush_ns += now_ns() - phase_start_ns;
+    NPU_TASK_END();
 
     add_gemmini_chunk_detail_profile(acc_memset_ns, fence_flush_ns, tiled_matmul_ns);
 
