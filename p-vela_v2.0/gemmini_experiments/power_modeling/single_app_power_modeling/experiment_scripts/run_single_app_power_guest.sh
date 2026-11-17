@@ -13,6 +13,7 @@ source "${SHARE_ROOT}/power_modeling/power_sim/power_model_defaults.env"
 
 APP=""
 RUN_ID=""
+BENCH_BIN_OVERRIDE=""
 SAMPLE_LIMIT=1
 NUM_THREADS=1
 REPS=50
@@ -52,6 +53,7 @@ Apps:
 
 Options:
   --run-id ID
+  --bench-bin FILE      benchmark binary in the app directory (default: the app's power binary)
   --sample-limit N
   --threads N
   --reps N
@@ -100,6 +102,7 @@ parse_args() {
         case "$1" in
             --app) APP="${2:-}"; shift 2 ;;
             --run-id) RUN_ID="${2:-}"; shift 2 ;;
+            --bench-bin) BENCH_BIN_OVERRIDE="${2:-}"; shift 2 ;;
             --sample-limit) SAMPLE_LIMIT="${2:-}"; shift 2 ;;
             --threads) NUM_THREADS="${2:-}"; shift 2 ;;
             --reps) REPS="${2:-}"; shift 2 ;;
@@ -149,6 +152,9 @@ configure_app() {
             ;;
         *) die "unsupported app: ${APP}" ;;
     esac
+    if [[ -n "${BENCH_BIN_OVERRIDE}" ]]; then
+        BENCH_BIN="./${BENCH_BIN_OVERRIDE#./}"
+    fi
     SYS_SCALE="${SYS_SCALE:-${DEFAULT_SYS_SCALE}}"
     CPU_TIME_SCALE="${CPU_TIME_SCALE:-${DEFAULT_CPU_TIME_SCALE}}"
 }
