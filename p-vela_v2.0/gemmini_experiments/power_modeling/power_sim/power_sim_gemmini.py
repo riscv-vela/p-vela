@@ -3,6 +3,7 @@
 import argparse
 import csv
 import os
+import re
 import time
 
 from power_model_config import number
@@ -101,6 +102,12 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--gemmini-gate-log",
+        default=None,
+        help="QEMU log carrying [POWER_GATE] transitions; gated intervals are "
+             "recorded as 0 W instead of idle power (TC.00.007)",
+    )
+    parser.add_argument(
         "--gemmini-util-threshold-pct",
         type=float,
         default=DEFAULT_GEMMINI_UTIL_THRESHOLD_PCT,
@@ -124,11 +131,70 @@ def cpu_power(freq_ghz, util):
     return a_boost * util * f3 + k_boost
 
 
+GATE_LINE = re.compile(
+    r"\[POWER_GATE\]\[Gemmini (\d+)\]\s+state=(gated|powered)\s+host_ts_ns=(\d+)")
+
+
+class GateTimeline:
+    """QEMU 로그의 [POWER_GATE] 전이를 **증분으로** 따라 읽는다.
+
+    전이는 측정 도중에 발생하므로 시작 시 한 번만 읽으면 놓친다. 파일 오프셋을
+    유지하며 매 샘플마다 새 줄만 파싱한다 (로그가 커도 비용이 일정하다).
+    QEMU 가 로그를 truncate 하면 오프셋을 되감는다.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.pos = 0
+        self.by_dev = {}
+
+    def poll(self):
+        if not self.path:
+            return self.by_dev
+        try:
+            size = os.path.getsize(self.path)
+        except OSError:
+            return self.by_dev
+        if size < self.pos:          # truncate 되었으면 처음부터
+            self.pos = 0
+        if size == self.pos:
+            return self.by_dev
+        with open(self.path, "r", errors="replace") as f:
+            f.seek(self.pos)
+            for line in f:
+                m = GATE_LINE.search(line)
+                if m:
+                    dev, state, ts = int(m.group(1)), m.group(2), int(m.group(3))
+                    self.by_dev.setdefault(dev, []).append((ts / 1e9, state == "gated"))
+            self.pos = f.tell()
+        for v in self.by_dev.values():
+            v.sort()
+        return self.by_dev
+
+
+def gated_at(timeline, t):
+    """시각 t 에서의 게이팅 여부 (마지막 전이 기준)."""
+    state = False
+    for ts, g in timeline:
+        if ts > t:
+            break
+        state = g
+    return state
+
+
 def threshold_gemmini_busy(busy_percent, threshold_pct):
     return 100.0 if busy_percent >= threshold_pct else 0.0
 
 
-def gemmini_power(util, full_util_power_w):
+def gemmini_power(util, full_util_power_w, gated=False):
+    """활성 / 전원 인가 유휴 / power gating 의 3상태.
+
+    turbostat Busy% 만으로는 "유휴지만 전원 인가"와 "게이팅"을 구분할 수 없다.
+    게이팅 여부는 QEMU 가 남기는 [POWER_GATE] 전이 로그에서 가져온다
+    (--gemmini-gate-log).  SFR-POW-06 / TC.00.007.
+    """
+    if gated:
+        return 0.0
     return full_util_power_w if util >= 1.0 else DEFAULT_GEMMINI_IDLE_POWER_W
 
 
@@ -181,6 +247,7 @@ def append_sample(
     epoch_ns=None,
     gemmini_util_threshold_pct=DEFAULT_GEMMINI_UTIL_THRESHOLD_PCT,
     observed_vcpu_busy=None,
+    gate_timelines=None,
 ):
     # Gemmini Busy% is converted to a binary 0/100% activity signal using the
     # configured threshold. Gemmini power is therefore either idle power or
@@ -195,8 +262,14 @@ def append_sample(
     utils = [busy / 100.0 for busy in busy_values]
     util_by_core = dict(zip(all_cores, utils))
 
+    # gemmini_cores 의 i 번째가 장치 i 에 대응한다 (러너가 그 순서로 핀한다).
     per_gemmini_power = [
-        gemmini_power(util_by_core[core], gemmini_full_util_power_w) for core in gemmini_cores
+        gemmini_power(
+            util_by_core[core],
+            gemmini_full_util_power_w,
+            gated_at((gate_timelines or {}).get(i, []), sample_tod_s),
+        )
+        for i, core in enumerate(gemmini_cores)
     ]
     per_vcpu_power = [
         sys_scale * cpu_power(fixed_freq_ghz, util_by_core[core]) for core in vcpu_cores
@@ -308,6 +381,12 @@ def parse_latest_complete_block(path, target_cores):
 def main():
     args = parse_args()
 
+    # QEMU 가 남긴 [POWER_GATE] 전이를 읽어 장치별 게이팅 타임라인을 만든다.
+    # 로그를 주지 않으면 빈 dict 가 되어 기존 2상태 동작과 동일하다.
+    gate_tracker = GateTimeline(args.gemmini_gate_log)
+    if args.gemmini_gate_log:
+        print(f"[power_sim_gemmini] gate log: {args.gemmini_gate_log}", flush=True)
+
     gemmini_cores = sorted(args.gemmini_cores)
     vcpu_cores = sorted(args.vcpu_cores)
     target_cores = gemmini_cores + vcpu_cores
@@ -363,6 +442,7 @@ def main():
                 args.gemmini_full_util_power_w,
                 latest["busy_by_core"],
                 gemmini_util_threshold_pct=args.gemmini_util_threshold_pct,
+                gate_timelines=gate_tracker.poll(),
             )
 
             gemmini_busy_str = ", ".join(
