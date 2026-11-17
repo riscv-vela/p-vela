@@ -29,7 +29,8 @@ DEFAULT_SETA_SYS = number("DEFAULT_SYS_SCALE")
 # Default full-util Gemmini power scale used by the single-app model.
 DEFAULT_GEMMINI_FULL_UTIL_POWER_W = number("DEFAULT_GEMMINI_FULL_UTIL_POWER_W")
 DEFAULT_GEMMINI_UTIL_THRESHOLD_PCT = number("DEFAULT_GEMMINI_UTIL_THRESHOLD_PCT")
-# 0.0127 W clock internal power + total leakage, rounded to 3 decimals.
+# Powered-idle power. Was 0.013 W (0.0127 W clock internal + leakage, from
+# synthesis); re-measured as 0.014 W (26-11-09).
 DEFAULT_GEMMINI_IDLE_POWER_W = number("DEFAULT_GEMMINI_IDLE_POWER_W")
 
 

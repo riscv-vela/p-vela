@@ -7,7 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-GEMMINI_IDLE_POWER_W = 0.013
+GEMMINI_IDLE_POWER_W = 0.014
 
 
 def parse_args():
