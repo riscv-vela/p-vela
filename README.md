@@ -21,7 +21,7 @@ values for Boost ON/OFF).
 
 ```
 p-vela/
-└── Power Model_v1/            # Power simulation model v1.0
+└── p-vela_v1.0/               # Power simulation model v1.0
     ├── README.md              # Full experiment guide (setup → measurement → logs)
     ├── power_sim.py           # Real-time power simulator (CPU model)
     ├── power_sim_mem.py       # Power simulator with memory model
@@ -33,7 +33,7 @@ p-vela/
 ## Getting Started
 
 The measurement flow consists of three stages. See
-[Power Model_v1/README.md](Power%20Model_v1/README.md) for the complete
+[p-vela_v1.0/README.md](p-vela_v1.0/README.md) for the complete
 step-by-step guide.
 
 **1. Set up the environment**
